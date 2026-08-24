@@ -17,7 +17,7 @@ The challenge provided a Windows command containing a large PowerShell `-encoded
 
 Since PowerShell encoded commands use Base64 + UTF-16LE, I decoded the payload using UTF-16LE. This revealed another PowerShell script instead of the flag.
 
-![Decoding the initial encoded command](img1.png)
+![Decoding the initial encoded command](img/img1.png)
 
 
 ## Finding the Next Layer
@@ -66,7 +66,7 @@ function func_get_proc_address {
 
 This revealed another PowerShell layer.
 
-![GZIP magic bytes identified in hex dump](img2.png)
+![GZIP magic bytes identified in hex dump](img/img2.png)
 
 ## Understanding the PowerShell Layer
 
@@ -97,7 +97,7 @@ User-Agent: Mozilla/5.0 ...
 
 The presence of a `User-Agent` string suggested that the shellcode was involved in network communication.
 
-![strings output showing User-Agent and IP address](img3.png)
+![strings output showing User-Agent and IP address](img/img3.png)
 
 I then disassembled the shellcode as 32-bit x86 using:
 
@@ -128,7 +128,5 @@ The corresponding bytes were:
 ```
 
 which represent the ASCII string `149.28.81.19`.
-
-![Hex offset verification of the IP string in the binary](img4.png)
 
 Therefore, the final flag was ``$N1PH€RSxTCTF{149.28.81.19}``
