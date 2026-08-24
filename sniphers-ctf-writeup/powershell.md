@@ -17,9 +17,7 @@ The challenge provided a Windows command containing a large PowerShell `-encoded
 
 Since PowerShell encoded commands use Base64 + UTF-16LE, I decoded the payload using UTF-16LE. This revealed another PowerShell script instead of the flag.
 
-![Decoding the initial encoded command](./images/01-decode-encodedcommand.png)
-
-![Decoded PowerShell script output](./images/02-decoded-script.png)
+![Decoding the initial encoded command](img1.png)
 
 
 ## Finding the Next Layer
@@ -37,7 +35,7 @@ The script then XORed every decoded byte with 35:
 $var_code[$x] = $var_code[$x] -bxor 35
 ```
 
-Since `35 = 0x23`, I reproduced this in Python:
+Since `35 = 0x23`, I got this in Python:
 
 ```python
 decoded = base64.b64decode(inner_b64)
@@ -45,8 +43,6 @@ layer2 = bytes(b ^ 0x23 for b in decoded)
 ```
 
 This produced the next binary layer.
-
-![XOR decoding script in Python](./images/03-xor-decode.png)
 
 ## Recognizing the GZIP Layer
 
@@ -70,9 +66,7 @@ function func_get_proc_address {
 
 This revealed another PowerShell layer.
 
-![GZIP magic bytes identified in hex dump](./images/04-gzip-magic-bytes.png)
-
-![Decompressed PowerShell layer](./images/05-decompressed-layer.png)
+![GZIP magic bytes identified in hex dump](img2.png)
 
 ## Understanding the PowerShell Layer
 
@@ -88,10 +82,6 @@ $var_runme.Invoke(...)
 
 This indicated that the script was loading and executing raw shellcode in memory.
 
-![VirtualAlloc and Marshal.Copy usage in script](./images/06-virtualalloc-marshalcopy.png)
-
-![Shellcode invocation via $var_runme.Invoke](./images/07-shellcode-invoke.png)
-
 ## Analyzing the Shellcode
 
 I inspected the resulting binary with `file`, `xxd`, and `strings`.
@@ -105,21 +95,23 @@ User-Agent: Mozilla/5.0 ...
 149.28.81.19
 ```
 
-The presence of a User-Agent suggested network communication.
+The presence of a `User-Agent` string suggested that the shellcode was involved in network communication.
 
-![strings output showing User-Agent and IP address](./images/08-strings-output.png)
+![strings output showing User-Agent and IP address](img3.png)
 
 I then disassembled the shellcode as 32-bit x86 using:
 
-```
+```bash
 objdump -D -b binary -m i386 -M intel layer2.bin > shellcode.asm
-```
+````
 
-The disassembly helped me understand the binary and confirm its network-related functionality. After resolving the API hashes, I identified functions such as `InternetOpenA`, `InternetConnectA`, `HttpOpenRequestA`, `HttpSendRequestA`, `InternetReadFile`, and `VirtualAlloc`.
+The disassembly revealed a custom API-hashing routine used to resolve Windows functions dynamically. By analysing the hashes, I identified several WinINet and Windows API calls, including `InternetOpenA`, `InternetConnectA`, `HttpOpenRequestA`, `HttpSendRequestA`, `InternetReadFile`, and `VirtualAlloc`.
 
-![Disassembly of shellcode showing resolved WinINet API calls](./images/09-shellcode-disassembly.png)
+![Disassembly of shellcode showing resolved WinINet API calls](img4.png)
 
-The flag itself was already visible in the strings output:
+This confirmed that the shellcode had network communication functionality. However, I did not need to fully reverse the shellcode to obtain the flag. The IP address was already present as a readable string in the `strings` output.
+
+This is more accurate because **`objdump` showed the hashing mechanism**, while the **API names came from resolving those hashes**, and the **flag came directly from `strings`**.
 
 ```
 149.28.81.19
