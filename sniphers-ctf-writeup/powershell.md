@@ -107,8 +107,6 @@ objdump -D -b binary -m i386 -M intel layer2.bin > shellcode.asm
 
 The disassembly revealed a custom API-hashing routine used to resolve Windows functions dynamically. By analysing the hashes, I identified several WinINet and Windows API calls, including `InternetOpenA`, `InternetConnectA`, `HttpOpenRequestA`, `HttpSendRequestA`, `InternetReadFile`, and `VirtualAlloc`.
 
-![Disassembly of shellcode showing resolved WinINet API calls](img4.png)
-
 This confirmed that the shellcode had network communication functionality. However, I did not need to fully reverse the shellcode to obtain the flag. The IP address was already present as a readable string in the `strings` output.
 
 This is more accurate because **`objdump` showed the hashing mechanism**, while the **API names came from resolving those hashes**, and the **flag came directly from `strings`**.
@@ -131,6 +129,6 @@ The corresponding bytes were:
 
 which represent the ASCII string `149.28.81.19`.
 
-![Hex offset verification of the IP string in the binary](./images/10-hex-verification.png)
+![Hex offset verification of the IP string in the binary](img4.png)
 
 Therefore, the final flag was ``$N1PH€RSxTCTF{149.28.81.19}``
