@@ -1,1 +1,1 @@
-# scriptCTF-2026-WriteUps
+# My-CTF-WriteUps
